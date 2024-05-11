@@ -1,19 +1,36 @@
-import { Controller, Get } from '@nestjs/common';
-import { AppService } from './app.service';
+import { Body, Controller, Get, Post } from '@nestjs/common';
+import { PrismaService } from './prisma.service';
+import { randomUUID } from 'node:crypto'
+import { CreateNotificationBody } from './create-notifications-body';
 
-/*
-  O contoller irá transformar a classe em um controlador, uma classe que lida com entradas, chamadas http.
-  Dentro do decorator, é possivel solicitar, que todas as rotas que forem acessadas dem estar com fixadas com o que estiver dentro do decorator
-*/
-// A injeção de depencencia no qual uma classe recebe as dependências de que necessita de uma fonte externa, em vez de criá-las internamente.
-@Controller()
+// O controlador transformará a classe em um controlador, responsável por lidar com entradas e chamadas HTTP.
+// A injeção de dependência permite que uma classe receba suas dependências de uma fonte externa, em vez de criá-las internamente.
+@Controller('notifications')
 export class AppController {
-  // ppController recebe uma instância de AppService através do construtor. 
-  constructor(private readonly appService: AppService) {}
+  // O Controller recebe uma instância de PrismaService através do construtor.
+  constructor(private readonly prisma: PrismaService) {}
 
-  // Esse decorador define uma rota http GET é feita para a rota @Get(). É chamada o método getHello
+  // Esse decorador define uma rota HTTP GET para o endpoint decorado com @Get().
   @Get()
-  getHello(): string {
-    return this.appService.getHello();
+  list() {
+    return this.prisma.notification.findMany();
+  }
+
+  @Post()
+  /*
+    O decorador @Body() é utilizado para extrair os dados do corpo da solicitação e passá-los para o parâmetro body. 
+    O tipo CreateNotificationBody é um DTO usado para validar e mapear os dados da solicitação.
+  */
+  async create(@Body() body: CreateNotificationBody) {
+    const { content, category, recipientID } = body;
+
+    await this.prisma.notification.create({
+      data: {
+        id: randomUUID(),
+        content,
+        category,
+        recipientID,
+      }
+    })
   }
 }
